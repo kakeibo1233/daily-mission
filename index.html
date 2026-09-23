@@ -133,6 +133,10 @@ nav button.active{color:var(--blue)}
 
 <section id="settings" class="screen">
   <div class="settings-title"><h2 id="settingsTitle">今月の項目設定</h2><button class="save" id="saveSettings">保存</button></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:7px;flex:none">
+    <button id="currentMonthTab" style="border:1px solid var(--line);background:var(--blue);border-radius:10px;padding:8px;font-weight:800">今月</button>
+    <button id="nextMonthTab" style="border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px;font-weight:800">翌月を設定</button>
+  </div>
   <div class="settings-note" id="settingsNote"></div>
   <div id="items" class="items"></div>
   <button class="add" id="addItem">＋ 項目を追加</button>
@@ -247,13 +251,28 @@ function renderDetail(k,mk){
  const box=document.getElementById('dayDetail'),its=itemsFor(mk),r=record(k),dd=new Date(k+'T00:00:00');
  box.innerHTML=`<h3>${dd.getMonth()+1}月${dd.getDate()}日の記録</h3>`+its.map((n,i)=>`<div class="detailrow"><span>${n}</span><span>${r[i]==null?'未入力':r[i]+'pt'}</span></div>`).join('')+`<div class="detailrow"><b>合計</b><b>${scoreFor(k,mk)} pt</b></div>`;
 }
-function canEditMonth(mk){
- const t=today0(); return (t.getDate()===1&&monthKey(t)===mk)||itemsFor(mk).length===0;
+function nextMonthKey(){
+ const t=today0(), d=new Date(t.getFullYear(),t.getMonth()+1,1); return monthKey(d);
 }
+function canEditMonth(mk){
+ const t=today0();
+ if(mk===nextMonthKey()) return true; // 翌月分は前月末日23:59まで編集可能
+ return (t.getDate()===1&&monthKey(t)===mk)||itemsFor(mk).length===0;
+}
+let settingsMonthMode='current';
 function renderSettings(){
- const mk=monthKey(today0()), d=parseMonth(mk), editable=canEditMonth(mk), its=itemsFor(mk);
+ const current=monthKey(today0()), next=nextMonthKey();
+ if(settingsMonthMode==='next' && !state.months[next]){
+   state.months[next]={items:[...itemsFor(current)]}; save();
+ }
+ const mk=settingsMonthMode==='next'?next:current, d=parseMonth(mk), editable=canEditMonth(mk), its=itemsFor(mk);
  document.getElementById('settingsTitle').textContent=`${d.getMonth()+1}月の項目設定`;
- document.getElementById('settingsNote').textContent=editable?'今月の項目を設定できます。保存後、その月の記録に適用されます。':'項目の変更は毎月1日のみ可能です。今月は確定済みです。';
+ document.getElementById('settingsNote').textContent=settingsMonthMode==='next'
+   ? `${d.getMonth()+1}月分は前月末日の23:59まで変更できます。月が始まると自動確定します。`
+   : (editable?'今月の項目を設定できます。':'今月の項目は確定済みです。');
+ const ctab=document.getElementById('currentMonthTab'),ntab=document.getElementById('nextMonthTab');
+ ctab.style.background=settingsMonthMode==='current'?'var(--blue)':'var(--panel)';
+ ntab.style.background=settingsMonthMode==='next'?'var(--blue)':'var(--panel)';
  const box=document.getElementById('items');box.innerHTML='';
  its.forEach((n,i)=>{
   let row=document.createElement('div');row.className='itemrow';
@@ -273,9 +292,11 @@ document.getElementById('todayBtn').onclick=renderHome;
 document.getElementById('prevDay').onclick=()=>{document.querySelector('nav button[data-screen="calendar"]').click()};
 document.getElementById('calPrev').onclick=()=>{let d=parseMonth(calMonth);d.setMonth(d.getMonth()-1);calMonth=monthKey(d);renderCalendar()};
 document.getElementById('calNext').onclick=()=>{let d=parseMonth(calMonth);d.setMonth(d.getMonth()+1);calMonth=monthKey(d);renderCalendar()};
-document.getElementById('addItem').onclick=()=>{const mk=monthKey(today0());if(canEditMonth(mk)){itemsFor(mk).push('新しい項目');renderSettings()}};
+document.getElementById('currentMonthTab').onclick=()=>{settingsMonthMode='current';renderSettings()};
+document.getElementById('nextMonthTab').onclick=()=>{settingsMonthMode='next';renderSettings()};
+document.getElementById('addItem').onclick=()=>{const mk=settingsMonthMode==='next'?nextMonthKey():monthKey(today0());if(canEditMonth(mk)){itemsFor(mk).push('新しい項目');renderSettings()}};
 document.getElementById('saveSettings').onclick=()=>{
- const mk=monthKey(today0());if(!canEditMonth(mk))return;
+ const mk=settingsMonthMode==='next'?nextMonthKey():monthKey(today0());if(!canEditMonth(mk))return;
  const vals=[...document.querySelectorAll('#items input')].map(x=>x.value.trim()).filter(Boolean);state.months[mk].items=vals;save();renderSettings();alert('保存しました');
 };
 document.getElementById('exportBtn').onclick=()=>{
