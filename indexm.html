@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#071722">
+<title>デイリーミッション</title>
+<style>
+:root{
+  --bg:#06131d;--panel:#0d2230;--panel2:#102a3a;--line:#1e4054;--text:#f5f8fb;
+  --muted:#91a5b3;--blue:#1598ff;--green:#37e29a;--amber:#ffb72d;--red:#ff4d4d;
+  --bronze:#d98245;--silver:#c9d4df;--gold:#ffd33d;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;overflow:hidden}
+button,input{font:inherit}
+button{color:inherit}
+.app{height:100dvh;max-width:520px;margin:auto;display:flex;flex-direction:column;background:linear-gradient(#071722,#06131d)}
+main{flex:1;min-height:0;position:relative}
+.screen{display:none;height:100%;padding:calc(env(safe-area-inset-top) + 10px) 16px 8px;overflow:hidden}
+.screen.active{display:flex;flex-direction:column}
+.header{height:44px;display:flex;align-items:center;justify-content:space-between;flex:none}
+.header h1{font-size:20px;margin:0;font-weight:800}
+.iconbtn{width:40px;height:36px;border:1px solid var(--line);border-radius:12px;background:var(--panel);font-size:20px}
+.datebar{display:flex;align-items:center;justify-content:center;gap:8px;height:42px;flex:none}
+.datebar button{border:0;background:var(--panel2);border-radius:11px;padding:8px 12px}
+.datebar .date{font-weight:750}
+.card{background:linear-gradient(145deg,#0d2230,#0a1d29);border:1px solid var(--line);border-radius:16px}
+.today{padding:12px;flex:none}
+.rowtitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.rowtitle b{font-size:17px}.small{font-size:12px;color:var(--muted)}
+.missions{display:grid;gap:6px}
+.mission{min-width:0;text-align:center;background:#0a1c28;border:1px solid #17394d;border-radius:12px;padding:8px 3px}
+.mission .name{height:31px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1.1;overflow:hidden}
+.mark{width:28px;height:28px;margin:5px auto 3px;position:relative}
+.mark.none{border:4px solid #607789;border-radius:50%}
+.mark.circle{border:4px solid var(--green);border-radius:50%}
+.mark.triangle:before{content:"";position:absolute;left:2px;top:1px;width:19px;height:19px;border-left:4px solid var(--amber);border-top:4px solid var(--amber);transform:rotate(45deg) skew(-12deg,-12deg)}
+.mark.cross:before,.mark.cross:after{content:"";position:absolute;left:12px;top:0;width:4px;height:29px;background:var(--red);border-radius:3px}
+.mark.cross:before{transform:rotate(45deg)}.mark.cross:after{transform:rotate(-45deg)}
+.pt{font-size:12px}
+.summary{margin-top:10px;padding:12px;flex:none}
+.bigline{display:flex;align-items:flex-end;justify-content:space-between}
+.big{font-size:34px;font-weight:850;letter-spacing:-1px}.rate{color:var(--amber);font-weight:800}
+.progress{height:9px;border-radius:99px;background:#365064;overflow:hidden;margin-top:9px}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,#1b9cff,#58c8ff);border-radius:99px}
+.reward{margin-top:10px;padding:12px;border-width:1.5px;flex:none}
+.reward.bronze{border-color:var(--bronze)}.reward.silver{border-color:var(--silver)}.reward.gold{border-color:var(--gold)}
+.rewardline{display:flex;align-items:center;gap:12px}
+.gift{width:48px;height:43px;position:relative;flex:none}
+.gift .box{position:absolute;left:5px;right:5px;bottom:0;height:29px;background:currentColor;border-radius:3px}
+.gift .lid{position:absolute;left:2px;right:2px;top:10px;height:9px;background:currentColor;border-radius:3px}
+.gift .ribbon{position:absolute;left:21px;top:10px;width:6px;height:33px;background:#071722}
+.gift .bow1,.gift .bow2{position:absolute;top:0;width:17px;height:14px;border:4px solid currentColor}
+.gift .bow1{left:8px;border-radius:13px 2px 13px 2px;transform:rotate(12deg)}
+.gift .bow2{right:8px;border-radius:2px 13px 2px 13px;transform:rotate(-12deg)}
+.bronze .gift{color:var(--bronze)}.silver .gift{color:var(--silver)}.gold .gift{color:var(--gold)}
+.rewardtext{flex:1}.rewardtext .target{font-size:22px;font-weight:850}.remain{color:var(--amber);font-weight:850}
+.minirow{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px;flex:none}
+.mini{padding:9px 4px;text-align:center}.mini span{display:block;color:var(--muted);font-size:11px}.mini b{font-size:15px}
+.notice{margin-top:8px;padding:9px 12px;font-size:12px;color:#dce8ef;flex:none}
+nav{height:calc(64px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);border-top:1px solid #183241;background:#071722;display:grid;grid-template-columns:repeat(3,1fr);flex:none}
+nav button{border:0;background:none;color:#8297a5;font-weight:700;font-size:12px}
+nav button.active{color:var(--blue)}
+/* calendar */
+.calhead{display:flex;align-items:center;justify-content:space-between;height:48px;flex:none}
+.calhead h2{font-size:20px}.calhead button{border:0;background:var(--panel);border-radius:10px;padding:8px 12px}
+.calendar-scroll{overflow-y:auto;min-height:0;padding-bottom:12px}
+.week{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;color:#a9bac5;font-size:12px;padding:8px 0}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.day{aspect-ratio:.78;border:1px solid #18394c;border-radius:8px;background:#091b27;padding:5px;text-align:center;font-size:11px}
+.day.blank{opacity:.15}.day.todayday{outline:2px solid var(--blue)}
+.day .d{font-weight:800}.day .daymark{transform:scale(.72);margin:4px auto -1px}.day .score{font-size:10px;color:#dbe7ee}
+.legend{display:flex;justify-content:space-around;font-size:11px;color:#b8c7d0;margin:12px 0}
+.daydetail{padding:12px}.daydetail h3{margin:0 0 8px}.detailrow{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #173344;font-size:13px}
+/* settings */
+.settings-title{height:45px;display:flex;align-items:center;justify-content:space-between;flex:none}
+.settings-title h2{margin:0;font-size:20px}.save{border:0;background:var(--blue);padding:8px 16px;border-radius:18px;font-weight:800}
+.settings-note{font-size:11px;color:var(--muted);margin:2px 0 7px;flex:none}
+.items{display:grid;gap:5px;flex:none}
+.itemrow{display:flex;gap:7px;align-items:center;background:var(--panel);border:1px solid #17384a;border-radius:10px;padding:6px 8px}
+.itemrow input{flex:1;min-width:0;background:transparent;border:0;color:white;outline:0;font-size:13px;font-weight:700}
+.itemrow button{width:28px;height:28px;border:0;border-radius:50%;background:#173547}
+.add{margin-top:7px;border:0;border-radius:12px;background:#355267;padding:10px;font-weight:800;flex:none}
+.rules{margin-top:8px;padding:10px;flex:none}.rules h3{font-size:13px;margin:0 0 8px}
+.rulegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.rule{text-align:center;border:1px solid #17384a;border-radius:9px;padding:7px 2px}
+.rule .tinygift{font-size:19px}.rule b{display:block;font-size:13px}.rule small{font-size:9px;color:#b3c2cb}
+.bronzetxt{color:var(--bronze)}.silvertxt{color:var(--silver)}.goldtxt{color:var(--gold)}
+.backup{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px;flex:none}
+.backup button{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px;font-size:11px}
+.hidden{display:none!important}
+@media(max-height:700px){
+ .header{height:38px}.datebar{height:36px}.today{padding:9px}.mission{padding:5px 2px}.mission .name{height:24px}.mark{width:24px;height:24px;margin:3px auto}.summary,.reward{padding:9px;margin-top:7px}.big{font-size:28px}.minirow{margin-top:6px}.mini{padding:6px 2px}.notice{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<main>
+<section id="home" class="screen active">
+  <div class="header"><button class="iconbtn" id="prevDay">‹</button><h1>デイリーミッション</h1><button class="iconbtn" id="todayBtn">今日</button></div>
+  <div class="datebar"><div class="date" id="homeDate"></div></div>
+  <div class="card today">
+    <div class="rowtitle"><b>本日の進捗</b><span class="small">タップで切り替え</span><b id="todayScore">0 / 0 pt</b></div>
+    <div id="missionGrid" class="missions"></div>
+  </div>
+  <div class="card summary">
+    <div class="small">今月の合計ポイント</div>
+    <div class="bigline"><div><span class="big" id="monthScore">0</span> <b id="monthMax">/ 0 pt</b></div><div><span class="small">達成率</span><br><span class="rate" id="rate">0%</span></div></div>
+    <div class="progress"><i id="monthBar" style="width:0%"></i></div>
+  </div>
+  <div id="rewardCard" class="card reward bronze"></div>
+  <div class="minirow">
+    <div class="card mini"><span>今月の日数</span><b id="daysInMonth">-</b></div>
+    <div class="card mini"><span>設定項目</span><b id="itemCount">-</b></div>
+    <div class="card mini"><span>1日の満点</span><b id="dailyMax">-</b></div>
+  </div>
+  <div class="card notice">過去日は変更できません。未入力は日付が変わると自動で0ptとして確定します。</div>
+</section>
+
+<section id="calendar" class="screen">
+  <div class="calhead"><button id="calPrev">‹</button><h2 id="calTitle"></h2><button id="calNext">›</button></div>
+  <div class="calendar-scroll">
+    <div class="week"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
+    <div id="calGrid" class="cal"></div>
+    <div class="legend"><span>○ = 3pt</span><span>△ = 1pt</span><span>× = 0pt</span><span>未入力</span></div>
+    <div id="dayDetail" class="card daydetail"></div>
+  </div>
+</section>
+
+<section id="settings" class="screen">
+  <div class="settings-title"><h2 id="settingsTitle">今月の項目設定</h2><button class="save" id="saveSettings">保存</button></div>
+  <div class="settings-note" id="settingsNote"></div>
+  <div id="items" class="items"></div>
+  <button class="add" id="addItem">＋ 項目を追加</button>
+  <div class="card rules">
+    <h3>今月の報酬条件（自動計算）</h3>
+    <div class="rulegrid">
+      <div class="rule"><div class="tinygift bronzetxt">■</div><b class="bronzetxt">5,000円</b><small id="bronzeRule"></small></div>
+      <div class="rule"><div class="tinygift silvertxt">■</div><b class="silvertxt">7,500円</b><small id="silverRule"></small></div>
+      <div class="rule"><div class="tinygift goldtxt">■</div><b class="goldtxt">10,000円</b><small id="goldRule"></small></div>
+    </div>
+  </div>
+  <div class="backup"><button id="exportBtn">バックアップを書き出す</button><button id="resetBtn">今月の記録を初期化</button></div>
+</section>
+</main>
+<nav>
+ <button data-screen="home" class="active">ホーム</button>
+ <button data-screen="calendar">カレンダー</button>
+ <button data-screen="settings">設定</button>
+</nav>
+</div>
+<script>
+const KEY='dailyMissionApp_v1';
+const pad=n=>String(n).padStart(2,'0');
+const dateKey=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const monthKey=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+const parseMonth=k=>{const [y,m]=k.split('-').map(Number);return new Date(y,m-1,1)};
+const dim=k=>{const d=parseMonth(k);return new Date(d.getFullYear(),d.getMonth()+1,0).getDate()};
+const today0=()=>{let d=new Date();d.setHours(0,0,0,0);return d};
+let state=JSON.parse(localStorage.getItem(KEY)||'{"months":{},"records":{}}');
+let viewDay=today0(), calMonth=monthKey(new Date());
+function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function defaultItems(){return ['簿記の勉強','筋トレ','英語の勉強']}
+function ensureMonth(mk){
+ if(!state.months[mk]) state.months[mk]={items:[]};
+ return state.months[mk];
+}
+function itemsFor(mk){return ensureMonth(mk).items}
+function thresholds(mk){
+ const n=itemsFor(mk).length, max=dim(mk)*n*3, bronze=dim(mk)*n, silver=Math.ceil(max*7/9);
+ return {bronze,silver,max};
+}
+function markClass(v){return v===3?'circle':v===1?'triangle':v===0?'cross':'none'}
+function cycle(v){return v==null?3:v===3?1:v===1?0:null}
+function record(k){return state.records[k]||{}}
+function scoreFor(k,mk=monthKey(new Date(k+'T00:00:00'))){
+ const it=itemsFor(mk), r=record(k); return it.reduce((s,_,i)=>s+(r[i]??0),0)
+}
+function finalizePast(){
+ const t=today0();
+ Object.keys(state.months).forEach(mk=>{
+   const d=parseMonth(mk), days=dim(mk), its=itemsFor(mk);
+   if(!its.length)return;
+   for(let day=1;day<=days;day++){
+     const x=new Date(d.getFullYear(),d.getMonth(),day); if(x>=t) continue;
+     const k=dateKey(x); if(!state.records[k])state.records[k]={};
+     its.forEach((_,i)=>{if(state.records[k][i]==null)state.records[k][i]=0});
+   }
+ });
+ save();
+}
+function monthTotal(mk){
+ const d=parseMonth(mk);let s=0;
+ for(let day=1;day<=dim(mk);day++)s+=scoreFor(dateKey(new Date(d.getFullYear(),d.getMonth(),day)),mk);
+ return s;
+}
+function renderHome(){
+ const t=today0(); viewDay=t;
+ const mk=monthKey(t), its=itemsFor(mk);
+ document.getElementById('homeDate').textContent=`${t.getFullYear()}年${t.getMonth()+1}月${t.getDate()}日`;
+ const grid=document.getElementById('missionGrid'); grid.innerHTML='';
+ grid.style.gridTemplateColumns=`repeat(${Math.max(1,its.length)},minmax(0,1fr))`;
+ const r=record(dateKey(t));
+ its.forEach((name,i)=>{
+   const v=r[i]; const el=document.createElement('button'); el.className='mission'; el.style.color='inherit';
+   el.innerHTML=`<div class="name">${name}</div><div class="mark ${markClass(v)}"></div><div class="pt">${v==null?'—':v+'pt'}</div>`;
+   el.onclick=()=>{if(!state.records[dateKey(t)])state.records[dateKey(t)]={};state.records[dateKey(t)][i]=cycle(v);save();renderHome()};
+   grid.appendChild(el);
+ });
+ if(!its.length) grid.innerHTML='<div class="small" style="grid-column:1/-1;padding:18px">設定から今月の項目を追加してください</div>';
+ const ts=scoreFor(dateKey(t),mk), daily=its.length*3;
+ document.getElementById('todayScore').textContent=`${ts} / ${daily} pt`;
+ const total=monthTotal(mk), th=thresholds(mk), rate=th.max?total/th.max*100:0;
+ document.getElementById('monthScore').textContent=total;document.getElementById('monthMax').textContent=`/ ${th.max} pt`;
+ document.getElementById('rate').textContent=rate.toFixed(1)+'%';document.getElementById('monthBar').style.width=Math.min(100,rate)+'%';
+ document.getElementById('daysInMonth').textContent=dim(mk)+'日';document.getElementById('itemCount').textContent=its.length+'項目';document.getElementById('dailyMax').textContent=daily+'pt';
+ renderReward(total,th);
+}
+function renderReward(total,th){
+ const c=document.getElementById('rewardCard');
+ let cls='bronze',money='5,000円',target=th.bronze;
+ if(total>=th.max&&th.max>0){cls='gold';c.className='card reward gold';c.innerHTML=`<div class="rewardline"><div class="gift"><i class="box"></i><i class="lid"></i><i class="ribbon"></i><i class="bow1"></i><i class="bow2"></i></div><div class="rewardtext"><div class="small">今月の達成報酬</div><div class="target">10,000円 達成！</div><div class="small">${total} / ${th.max} pt</div></div></div>`;return}
+ if(total>=th.silver&&th.max){cls='gold';money='10,000円';target=th.max}
+ else if(total>=th.bronze&&th.max){cls='silver';money='7,500円';target=th.silver}
+ c.className='card reward '+cls;
+ c.innerHTML=`<div class="rewardline"><div class="gift"><i class="box"></i><i class="lid"></i><i class="ribbon"></i><i class="bow1"></i><i class="bow2"></i></div><div class="rewardtext"><div class="small">次の目標</div><div class="target">${money}まで</div><div class="remain">あと ${Math.max(0,target-total)} pt</div><div class="progress"><i style="width:${target?Math.min(100,total/target*100):0}%"></i></div><div class="small">${total} / ${target} pt</div></div></div>`;
+}
+function renderCalendar(){
+ const mk=calMonth,d=parseMonth(mk),its=itemsFor(mk);
+ document.getElementById('calTitle').textContent=`${d.getFullYear()}年${d.getMonth()+1}月`;
+ const g=document.getElementById('calGrid');g.innerHTML='';
+ for(let i=0;i<d.getDay();i++){let e=document.createElement('div');e.className='day blank';g.appendChild(e)}
+ for(let day=1;day<=dim(mk);day++){
+   const x=new Date(d.getFullYear(),d.getMonth(),day),k=dateKey(x),sc=scoreFor(k,mk),max=its.length*3;
+   let summary=null;if(state.records[k]){if(max&&sc===max)summary=3;else if(sc>0)summary=1;else summary=0}
+   let e=document.createElement('button');e.className='day'+(k===dateKey(today0())?' todayday':'');
+   e.innerHTML=`<div class="d">${day}</div>${summary==null?'':`<div class="mark daymark ${markClass(summary)}"></div>`}<div class="score">${state.records[k]?sc+'pt':'—'}</div>`;
+   e.onclick=()=>renderDetail(k,mk);g.appendChild(e);
+ }
+ renderDetail(dateKey(new Date(d.getFullYear(),d.getMonth(),1)),mk);
+}
+function renderDetail(k,mk){
+ const box=document.getElementById('dayDetail'),its=itemsFor(mk),r=record(k),dd=new Date(k+'T00:00:00');
+ box.innerHTML=`<h3>${dd.getMonth()+1}月${dd.getDate()}日の記録</h3>`+its.map((n,i)=>`<div class="detailrow"><span>${n}</span><span>${r[i]==null?'未入力':r[i]+'pt'}</span></div>`).join('')+`<div class="detailrow"><b>合計</b><b>${scoreFor(k,mk)} pt</b></div>`;
+}
+function canEditMonth(mk){
+ const t=today0(); return (t.getDate()===1&&monthKey(t)===mk)||itemsFor(mk).length===0;
+}
+function renderSettings(){
+ const mk=monthKey(today0()), d=parseMonth(mk), editable=canEditMonth(mk), its=itemsFor(mk);
+ document.getElementById('settingsTitle').textContent=`${d.getMonth()+1}月の項目設定`;
+ document.getElementById('settingsNote').textContent=editable?'今月の項目を設定できます。保存後、その月の記録に適用されます。':'項目の変更は毎月1日のみ可能です。今月は確定済みです。';
+ const box=document.getElementById('items');box.innerHTML='';
+ its.forEach((n,i)=>{
+  let row=document.createElement('div');row.className='itemrow';
+  row.innerHTML=`<input ${editable?'':'disabled'} value="${n.replaceAll('"','&quot;')}" data-i="${i}"><button ${editable?'':'disabled'} data-del="${i}">×</button>`;
+  box.appendChild(row);
+ });
+ box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(editable){its.splice(+b.dataset.del,1);renderSettings()}});
+ document.getElementById('addItem').disabled=!editable;document.getElementById('saveSettings').disabled=!editable;
+ const th=thresholds(mk);document.getElementById('bronzeRule').textContent=`${th.bronze}pt以上`;document.getElementById('silverRule').textContent=`${th.silver}pt以上`;document.getElementById('goldRule').textContent=`${th.max}pt`;
+}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x===b));
+ document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===b.dataset.screen));
+ if(b.dataset.screen==='home')renderHome();if(b.dataset.screen==='calendar'){calMonth=monthKey(today0());renderCalendar()}if(b.dataset.screen==='settings')renderSettings();
+});
+document.getElementById('todayBtn').onclick=renderHome;
+document.getElementById('prevDay').onclick=()=>{document.querySelector('nav button[data-screen="calendar"]').click()};
+document.getElementById('calPrev').onclick=()=>{let d=parseMonth(calMonth);d.setMonth(d.getMonth()-1);calMonth=monthKey(d);renderCalendar()};
+document.getElementById('calNext').onclick=()=>{let d=parseMonth(calMonth);d.setMonth(d.getMonth()+1);calMonth=monthKey(d);renderCalendar()};
+document.getElementById('addItem').onclick=()=>{const mk=monthKey(today0());if(canEditMonth(mk)){itemsFor(mk).push('新しい項目');renderSettings()}};
+document.getElementById('saveSettings').onclick=()=>{
+ const mk=monthKey(today0());if(!canEditMonth(mk))return;
+ const vals=[...document.querySelectorAll('#items input')].map(x=>x.value.trim()).filter(Boolean);state.months[mk].items=vals;save();renderSettings();alert('保存しました');
+};
+document.getElementById('exportBtn').onclick=()=>{
+ const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='daily-mission-backup.json';a.click();URL.revokeObjectURL(a.href)
+};
+document.getElementById('resetBtn').onclick=()=>{
+ if(!confirm('今月の記録だけを初期化しますか？'))return;const mk=monthKey(today0());Object.keys(state.records).filter(k=>k.startsWith(mk)).forEach(k=>delete state.records[k]);save();renderSettings();alert('今月の記録を初期化しました')
+};
+(function init(){
+ const mk=monthKey(today0());ensureMonth(mk);
+ if(!itemsFor(mk).length){state.months[mk].items=defaultItems();save()}
+ finalizePast();renderHome();
+})();
+</script>
+</body>
+</html>
